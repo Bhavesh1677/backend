@@ -3,15 +3,16 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import fs from "fs";
 
 const registerUser = asyncHandler(async (req, res) => {
   // Get user details from request
-  const { username, email, fullName, password, avatar, coverImage } = req.body;
+  const { username, email, fullName, password } = req.body;
 
   // Validate required fields
   if (
-    [username, email, fullName, password, avatar].some(
-      (field) => field?.trim() === ""
+    [username, email, fullName, password].some(
+      (field) => !field?.trim()
     )
   ) {
     throw new ApiError(400, "All required fields must be provided");
@@ -27,8 +28,8 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // get local file path
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  const avatarLocalPath = req.files?.avatar?.[0]?.path;
+  const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
   // check if file path is available 
   if(!avatarLocalPath){
@@ -53,6 +54,14 @@ const registerUser = asyncHandler(async (req, res) => {
     avatar: avatarUpload.url,   
     coverImage: coverImageUpload?.url || "",
   });
+
+  // remove files from local storage
+  if(avatarUpload.url){
+    await fs.unlinkSync(avatarLocalPath)
+  }
+  if(coverImageUpload.url){
+    await fs.unlinkSync(coverImageLocalPath)
+  }
 
   // Fetch created user without password and refreshToken
   const createdUser = await User.findById(user._id).select(
