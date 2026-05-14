@@ -55,23 +55,16 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImage: coverImageUpload?.url || "",
   });
 
-  // remove files from local storage
-  if(avatarUpload.url){
-    await fs.unlinkSync(avatarLocalPath)
-  }
-  if(coverImageUpload.url){
-    await fs.unlinkSync(coverImageLocalPath)
-  }
-
   // Fetch created user without password and refreshToken
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
+  // check if user created successfully
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering the user");
   }
-
+  // send response
   return res
     .status(201)
     .json(new ApiResponse(201, createdUser, "User registered successfully"));
